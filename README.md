@@ -14,12 +14,12 @@ your attempt ──► Geode hooks ──► session JSON ──► where / what
 perfect run  ──►     same     ──► reference JSON ─┘
 ```
 
-| Question | What v0.1 records | Later |
+| Question | What v0.2 records | Later |
 | --- | --- | --- |
 | Where do I fail most? | Death `x`, `y`, `percent` per attempt | Heatmaps / clustering |
 | What object / mode? | Killer `objectId` + `GameObjectType`, gamemode | Readable names for spikes vs solids |
-| Am I above/below the good line? | First normal-mode completion is tagged `reference: true` | Sample player `y` vs that run at the same `x` |
-| Did I jump late? | Not yet | Frame-accurate inputs vs the reference |
+| Am I above/below the good line? | Sampled path (`x`, `y` every 8 frames) plus a tagged `reference` completion | Diff `y` vs the reference at the same `x` |
+| Where did I click? | `handleButton` press/release with `x`, `y`, `percent`, `frame` | Compare click timing to the reference |
 | Generate a perfect run for me | Out of scope | Use your first completion, or import a GDR later |
 
 A “perfect run” here is **your first normal-mode completion** of that level, copied to `references/`. It is a reference path, not the only valid route. Physics also has to match (vanilla 240 TPS, same practice / start-pos / CBF settings).
@@ -108,7 +108,7 @@ An annotated example lives in [`docs/session.example.json`](docs/session.example
 ```
 CMakeLists.txt          Geode / CMake project
 mod.json                Mod metadata (id gdhelper.analyzer)
-src/main.cpp            PlayLayer hooks (init, reset, death, complete, quit)
+src/main.cpp            PlayLayer + GJBaseGameLayer hooks
 src/SessionRecorder.*   Session state + JSON writer
 docs/session.example.json
 ```
@@ -117,18 +117,20 @@ Hooks used:
 
 - `PlayLayer::init` — start a session from `GJGameLevel`
 - `PlayLayer::resetLevel` — new attempt (manual restarts are stored as `outcome: "reset"`)
+- `PlayLayer::postUpdate` — sample player `x`/`y`/`percent` every 8 frames
 - `PlayLayer::destroyPlayer` — first frame of a real player death (dummy objects ignored)
 - `PlayLayer::levelComplete` — `outcome: "complete"`; first non-practice, non-start-pos win becomes the reference
 - `PlayLayer::onQuit` — flush JSON
+- `GJBaseGameLayer::handleButton` — log jump/left/right press and release with the player position
+
+Each attempt JSON object now includes `path` (sampled trajectory) and `clicks` (inputs for that attempt). Schema version is `1`.
 
 ## Roadmap
 
-After this foundation:
+After path + click capture:
 
-1. Sample the player trajectory in `postUpdate` (every N frames).
-2. Log clicks via `GJBaseGameLayer::handleButton`.
-3. In-game death markers on the progress bar.
-4. A small offline comparer (Python is fine) that diffs a session against the tagged reference: death clusters, Y error vs the good line, then input timing.
+1. In-game death markers on the progress bar.
+2. A small offline comparer (Python is fine) that diffs a session against the tagged reference: death clusters, Y error vs the good line, then input timing.
 
 Related mods if you want to explore the space: [DeathMarkers](https://github.com/MaSp005/deathmarkers), [BetterStats](https://geode-sdk.org/mods/logon.betterstats), [ToastyReplay](https://github.com/ToastexGD/ToastyReplay) / [GDR](https://github.com/maxnut/GDReplayFormat).
 

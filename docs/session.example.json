@@ -1,5 +1,6 @@
 {
-  "schemaVersion": 0,
+  "schemaVersion": 1,
+  "pathSampleInterval": 8,
   "level": {
     "id": 1,
     "name": "Stereo Madness",
@@ -23,7 +24,16 @@
       "killer": {
         "objectId": 8,
         "type": "Hazard"
-      }
+      },
+      "path": [
+        { "frame": 0, "percent": 0.0, "x": 0.0, "y": 105.0, "gamemode": "cube" },
+        { "frame": 8, "percent": 0.4, "x": 90.0, "y": 105.0, "gamemode": "cube" },
+        { "frame": 16, "percent": 0.8, "x": 180.0, "y": 135.0, "gamemode": "cube" }
+      ],
+      "clicks": [
+        { "frame": 12, "down": true, "button": "jump", "player2": false, "percent": 0.6, "x": 140.0, "y": 105.0 },
+        { "frame": 18, "down": false, "button": "jump", "player2": false, "percent": 0.9, "x": 200.0, "y": 140.0 }
+      ]
     },
     {
       "attempt": 2,
@@ -31,7 +41,11 @@
       "percent": 12.0,
       "x": 320.0,
       "y": 105.0,
-      "gamemode": "cube"
+      "gamemode": "cube",
+      "path": [
+        { "frame": 0, "percent": 0.0, "x": 0.0, "y": 105.0, "gamemode": "cube" }
+      ],
+      "clicks": []
     },
     {
       "attempt": 3,
@@ -39,7 +53,15 @@
       "percent": 100.0,
       "x": 2580.0,
       "y": 105.0,
-      "gamemode": "cube"
+      "gamemode": "cube",
+      "path": [
+        { "frame": 0, "percent": 0.0, "x": 0.0, "y": 105.0, "gamemode": "cube" },
+        { "frame": 8, "percent": 0.4, "x": 90.0, "y": 105.0, "gamemode": "cube" }
+      ],
+      "clicks": [
+        { "frame": 4, "down": true, "button": "jump", "player2": false, "percent": 0.2, "x": 45.0, "y": 105.0 },
+        { "frame": 10, "down": false, "button": "jump", "player2": false, "percent": 0.5, "x": 110.0, "y": 140.0 }
+      ]
     }
   ]
 }

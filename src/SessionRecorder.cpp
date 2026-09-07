@@ -83,6 +83,7 @@ void SessionRecorder::beginSession(GJGameLevel* level) {
     m_attemptNumber = 0;
     m_attempts.clear();
     m_filename.clear();
+    resetAttemptBuffers();
 
     if (level && level->isPlatformer()) {
         m_skipped = true;
@@ -116,6 +117,7 @@ void SessionRecorder::cancelSession() {
     m_attemptOpen = false;
     m_attempts.clear();
     m_filename.clear();
+    resetAttemptBuffers();
 }
 
 void SessionRecorder::onReset(PlayLayer* layer) {
@@ -138,6 +140,7 @@ void SessionRecorder::beginAttempt(PlayLayer* layer) {
 
     ++m_attemptNumber;
     m_attemptOpen = true;
+    resetAttemptBuffers();
 
     if (layer && m_attemptNumber == 1) {
         m_practice = layer->m_isPracticeMode;
@@ -201,6 +204,7 @@ void SessionRecorder::endSession() {
     m_skipped = false;
     m_attempts.clear();
     m_filename.clear();
+    resetAttemptBuffers();
 }
 
 float SessionRecorder::computePercent(PlayLayer* layer, PlayerObject* player) {
@@ -223,7 +227,66 @@ float SessionRecorder::computePercent(PlayLayer* layer, PlayerObject* player) {
     return std::round(percent * 100.f) / 100.f;
 }
 
-AttemptRecord SessionRecorder::capture(PlayLayer* layer, PlayerObject* player) const {
+void SessionRecorder::resetAttemptBuffers() {
+    m_frame = 0;
+    m_path.clear();
+    m_clicks.clear();
+    m_path.reserve(256);
+    m_clicks.reserve(64);
+}
+
+PathSample SessionRecorder::makePathSample(PlayLayer* layer, PlayerObject* player) const {
+    PathSample sample;
+    sample.frame = m_frame;
+    sample.percent = computePercent(layer, player);
+    sample.gamemode = gamemodeName(player);
+    if (player) {
+        auto const pos = player->getPosition();
+        sample.x = pos.x;
+        sample.y = pos.y;
+    }
+    return sample;
+}
+
+void SessionRecorder::samplePath(PlayLayer* layer) {
+    if (!m_active || !m_attemptOpen || !layer || layer->m_isPaused) {
+        return;
+    }
+
+    auto* player = layer->m_player1;
+    if (!player || player->m_isDead) {
+        return;
+    }
+
+    if (m_frame % pathSampleInterval == 0) {
+        m_path.push_back(makePathSample(layer, player));
+    }
+    ++m_frame;
+}
+
+void SessionRecorder::recordClick(PlayLayer* layer, bool down, int button, bool player2) {
+    if (!m_active || !m_attemptOpen || !layer || layer->m_isPaused) {
+        return;
+    }
+
+    auto* player = player2 ? layer->m_player2 : layer->m_player1;
+    if (!player || player->m_isDead) {
+        return;
+    }
+
+    auto const pos = player->getPosition();
+    m_clicks.push_back(ClickEvent {
+        .frame = m_frame,
+        .percent = computePercent(layer, player),
+        .x = pos.x,
+        .y = pos.y,
+        .down = down,
+        .button = buttonName(button),
+        .player2 = player2,
+    });
+}
+
+AttemptRecord SessionRecorder::capture(PlayLayer* layer, PlayerObject* player) {
     AttemptRecord rec;
     rec.attempt = m_attemptNumber;
     rec.percent = computePercent(layer, player);
@@ -232,7 +295,13 @@ AttemptRecord SessionRecorder::capture(PlayLayer* layer, PlayerObject* player) c
         auto const pos = player->getPosition();
         rec.x = pos.x;
         rec.y = pos.y;
+        if (m_path.empty() || m_path.back().frame != m_frame) {
+            m_path.push_back(makePathSample(layer, player));
+        }
     }
+    rec.path = std::move(m_path);
+    rec.clicks = std::move(m_clicks);
+    resetAttemptBuffers();
     return rec;
 }
 
@@ -262,6 +331,15 @@ std::string SessionRecorder::gamemodeName(PlayerObject* player) {
         return "swing";
     }
     return "cube";
+}
+
+std::string SessionRecorder::buttonName(int button) {
+    switch (button) {
+        case 1: return "jump";
+        case 2: return "left";
+        case 3: return "right";
+        default: return "unknown";
+    }
 }
 
 KillerInfo SessionRecorder::killerFrom(GameObject* object) {
@@ -296,11 +374,41 @@ matjson::Value SessionRecorder::toJson() const {
                 { "type", attempt.killer->type },
             });
         }
+
+        std::vector<matjson::Value> path;
+        path.reserve(attempt.path.size());
+        for (auto const& sample : attempt.path) {
+            path.push_back(matjson::makeObject({
+                { "frame", sample.frame },
+                { "percent", sample.percent },
+                { "x", sample.x },
+                { "y", sample.y },
+                { "gamemode", sample.gamemode },
+            }));
+        }
+        obj["path"] = matjson::Value(std::move(path));
+
+        std::vector<matjson::Value> clicks;
+        clicks.reserve(attempt.clicks.size());
+        for (auto const& click : attempt.clicks) {
+            clicks.push_back(matjson::makeObject({
+                { "frame", click.frame },
+                { "down", click.down },
+                { "button", click.button },
+                { "player2", click.player2 },
+                { "percent", click.percent },
+                { "x", click.x },
+                { "y", click.y },
+            }));
+        }
+        obj["clicks"] = matjson::Value(std::move(clicks));
+
         attempts.push_back(std::move(obj));
     }
 
     return matjson::makeObject({
-        { "schemaVersion", 0 },
+        { "schemaVersion", 1 },
+        { "pathSampleInterval", pathSampleInterval },
         { "level", matjson::makeObject({
             { "id", m_levelId },
             { "name", m_levelName },

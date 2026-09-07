@@ -1,4 +1,5 @@
 #include <Geode/Geode.hpp>
+#include <Geode/modify/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 
 #include "SessionRecorder.hpp"
@@ -30,6 +31,11 @@ class $modify(GDHelperPlayLayer, PlayLayer) {
         SessionRecorder::get().beginAttempt(this);
     }
 
+    void postUpdate(float dt) {
+        PlayLayer::postUpdate(dt);
+        SessionRecorder::get().samplePath(this);
+    }
+
     void destroyPlayer(PlayerObject* player, GameObject* object) {
         auto const isRealPlayer = player == m_player1 || player == m_player2;
         auto const wasDead = player && player->m_isDead;
@@ -58,5 +64,16 @@ class $modify(GDHelperPlayLayer, PlayLayer) {
         SessionRecorder::get().onReset(this);
         SessionRecorder::get().endSession();
         PlayLayer::onQuit();
+    }
+};
+
+class $modify(GDHelperBaseLayer, GJBaseGameLayer) {
+    void handleButton(bool down, int button, bool player2) {
+        GJBaseGameLayer::handleButton(down, button, player2);
+        auto* playLayer = PlayLayer::get();
+        if (!playLayer || static_cast<void*>(playLayer) != static_cast<void*>(this)) {
+            return;
+        }
+        SessionRecorder::get().recordClick(playLayer, down, button, player2);
     }
 };

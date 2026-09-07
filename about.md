@@ -1,13 +1,15 @@
 # GD Helper
 
-Records your Geometry Dash attempts to JSON so you can study **where** you die and **what** killed you.
+Records your Geometry Dash attempts to JSON so you can study **where** you die, **what** killed you, and **where you clicked**.
 
-This is not a clickbot. It watches `PlayLayer` (deaths, resets, completions) and writes session files under this mod's save directory.
+This is not a clickbot. It watches `PlayLayer` (deaths, resets, completions, path samples) and `handleButton` (clicks), then writes session files under this mod's save directory.
 
-## What you get in v0.1
+## What you get in v0.2
 
 - One JSON file per classic-level session
 - Each attempt stores percent, position, gamemode, and the collider that killed you
+- A sampled player path (`x`, `y`, percent, gamemode every 8 frames)
+- Click log (press/release, button, position) so you can see where inputs happened on that attempt
 - Your first normal-mode completion of a level is tagged as the **reference** (perfect run) for later comparison
 - Platformer levels are ignored for now
 
