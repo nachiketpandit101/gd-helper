@@ -44,6 +44,7 @@ private:
     SessionRecorder() = default;
 
     AttemptRecord capture(PlayLayer* layer, PlayerObject* player) const;
+    static float computePercent(PlayLayer* layer, PlayerObject* player);
     matjson::Value toJson() const;
     void persist() const;
     void persistReferenceCopy() const;

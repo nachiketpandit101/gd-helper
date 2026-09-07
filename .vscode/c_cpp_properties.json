@@ -1,0 +1,38 @@
+{
+	"version": 4,
+	"configurations": [
+		{
+			"name": "Geode",
+			"compileCommands": "${workspaceFolder}/build/compile_commands.json",
+			"compilerPath": "C:/Users/nachi/scoop/apps/llvm/current/bin/clang++.exe",
+			"intelliSenseMode": "windows-clang-x64",
+			"cStandard": "c17",
+			"cppStandard": "c++23",
+			"includePath": [
+				"${workspaceFolder}/src",
+				"${workspaceFolder}/build/bindings/bindings",
+				"${workspaceFolder}/build/_deps/bindings-src/bindings/include",
+				"${workspaceFolder}/build/_deps/fmt-src/include",
+				"${workspaceFolder}/build/_deps/tuliphook-src/include",
+				"${workspaceFolder}/build/_deps/result-src/include",
+				"${workspaceFolder}/build/_deps/json-src/include",
+				"${workspaceFolder}/build/_deps/nontype_functional-src/include",
+				"${workspaceFolder}/build/_deps/asp2-src/include",
+				"${workspaceFolder}/build/_deps/arc-src/include",
+				"${env:GEODE_SDK}/loader/include",
+				"${env:GEODE_SDK}/loader/include/Geode/cocos/include",
+				"${env:GEODE_SDK}/loader/include/Geode/cocos/extensions",
+				"${env:GEODE_SDK}/loader/include/Geode/fmod"
+			],
+			"defines": [
+				"NOMINMAX",
+				"GEODE_MOD_ID=gdhelper.analyzer",
+				"GEODE_GD_VERSION=2.2081",
+				"GEODE_GD_VERSION_STRING=2.2081",
+				"GEODE_COMP_GD_VERSION=22081",
+				"MAT_JSON_DYNAMIC=1",
+				"PROJECT_NAME=GDHelper"
+			]
+		}
+	]
+}

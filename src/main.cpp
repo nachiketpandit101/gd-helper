@@ -32,11 +32,21 @@ class $modify(GDHelperPlayLayer, PlayLayer) {
 
     void destroyPlayer(PlayerObject* player, GameObject* object) {
         auto const isRealPlayer = player == m_player1 || player == m_player2;
-        if (isRealPlayer && !m_fields->deathRecorded) {
-            m_fields->deathRecorded = true;
-            SessionRecorder::get().recordDeath(this, player, object);
-        }
+        auto const wasDead = player && player->m_isDead;
+
         PlayLayer::destroyPlayer(player, object);
+
+        // Anticheat dummy / ignore-damage calls hit this hook but do not kill.
+        // Only record the frame the player actually dies.
+        if (!isRealPlayer || wasDead || m_fields->deathRecorded) {
+            return;
+        }
+        if (!player || !player->m_isDead) {
+            return;
+        }
+
+        m_fields->deathRecorded = true;
+        SessionRecorder::get().recordDeath(this, player, object);
     }
 
     void levelComplete() {

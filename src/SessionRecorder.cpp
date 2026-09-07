@@ -1,6 +1,8 @@
 #include "SessionRecorder.hpp"
 
+#include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cctype>
 
 using namespace geode::prelude;
@@ -139,7 +141,7 @@ void SessionRecorder::beginAttempt(PlayLayer* layer) {
 
     if (layer && m_attemptNumber == 1) {
         m_practice = layer->m_isPracticeMode;
-        m_startPos = layer->getCurrentPercent() > 0.01f;
+        m_startPos = layer->m_isTestMode;
     }
 }
 
@@ -201,10 +203,30 @@ void SessionRecorder::endSession() {
     m_filename.clear();
 }
 
+float SessionRecorder::computePercent(PlayLayer* layer, PlayerObject* player) {
+    if (!layer || !player) {
+        return 0.f;
+    }
+
+    // Position in the level, not getCurrentPercent() — that value is often still
+    // ~0 on the destroyPlayer frame (and would also be 0 for the anticheat dummy).
+    float length = layer->m_levelLength;
+    if (length <= 0.f && layer->m_endPortal) {
+        length = layer->m_endPortal->getPositionX();
+    }
+    if (length <= 0.f) {
+        return 0.f;
+    }
+
+    float percent = player->getPositionX() / length * 100.f;
+    percent = std::clamp(percent, 0.f, 100.f);
+    return std::round(percent * 100.f) / 100.f;
+}
+
 AttemptRecord SessionRecorder::capture(PlayLayer* layer, PlayerObject* player) const {
     AttemptRecord rec;
     rec.attempt = m_attemptNumber;
-    rec.percent = layer ? layer->getCurrentPercent() : 0.f;
+    rec.percent = computePercent(layer, player);
     rec.gamemode = gamemodeName(player);
     if (player) {
         auto const pos = player->getPosition();
