@@ -48,8 +48,10 @@ struct AttemptRecord {
 class SessionRecorder {
 public:
     static constexpr int pathSampleInterval = 8;
+    static constexpr char const* recordSettingKey = "record-sessions";
 
     static SessionRecorder& get();
+    static bool isRecordingEnabled();
 
     void beginSession(GJGameLevel* level);
     void cancelSession();
@@ -59,6 +61,7 @@ public:
     void recordComplete(PlayLayer* layer);
     void samplePath(PlayLayer* layer);
     void recordClick(PlayLayer* layer, bool down, int button, bool player2);
+    void applyEnabled(bool enabled);
     void endSession();
 
     bool isActive() const;

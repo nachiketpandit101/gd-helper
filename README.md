@@ -103,6 +103,8 @@ A profile from `geode config setup` installs `gdhelper.analyzer.geode` into GD a
 
 An annotated example lives in [`docs/session.example.json`](docs/session.example.json).
 
+Path and click logs make session files much larger. Use the **Record** checkbox on the pause menu (or Geode → GD Helper settings) to turn capture off when you are not analyzing a run. Turning it off stops sampling immediately and flushes the current session; turning it back on starts a new file.
+
 ## Project layout
 
 ```
@@ -122,8 +124,9 @@ Hooks used:
 - `PlayLayer::levelComplete` — `outcome: "complete"`; first non-practice, non-start-pos win becomes the reference
 - `PlayLayer::onQuit` — flush JSON
 - `GJBaseGameLayer::handleButton` — log jump/left/right press and release with the player position
+- `PauseLayer::customSetup` — **Record** toggle for the current session
 
-Each attempt JSON object now includes `path` (sampled trajectory) and `clicks` (inputs for that attempt). Schema version is `1`.
+Each attempt JSON object now includes `path` (sampled trajectory) and `clicks` (inputs for that attempt). Schema version is `1`. Recording can be disabled from the pause menu or Geode settings (`record-sessions`).
 
 ## Roadmap
 

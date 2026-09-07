@@ -10,6 +10,7 @@ This is not a clickbot. It watches `PlayLayer` (deaths, resets, completions, pat
 - Each attempt stores percent, position, gamemode, and the collider that killed you
 - A sampled player path (`x`, `y`, percent, gamemode every 8 frames)
 - Click log (press/release, button, position) so you can see where inputs happened on that attempt
+- Pause-menu **Record** checkbox (same option in Geode mod settings) to stop writing session files
 - Your first normal-mode completion of a level is tagged as the **reference** (perfect run) for later comparison
 - Platformer levels are ignored for now
 

@@ -1,3 +1,7 @@
+# v0.2.1
+
+- Pause-menu **Record** toggle (and Geode mod settings) to turn session capture on or off so path/click JSON does not pile up
+
 # v0.2.0
 
 - Sample the player path every 8 physics frames in `PlayLayer::postUpdate`

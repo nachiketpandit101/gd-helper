@@ -5,8 +5,16 @@
 	},
 	"id": "gdhelper.analyzer",
 	"name": "GD Helper",
-	"version": "v0.2.0",
+	"version": "v0.2.1",
 	"developer": "gdhelper",
 	"description": "Records Geometry Dash play sessions so you can see where and why you die.",
-	"tags": ["gameplay", "utility", "offline"]
+	"tags": ["gameplay", "utility", "offline"],
+	"settings": {
+		"record-sessions": {
+			"name": "Record sessions",
+			"description": "When on, GD Helper writes attempt paths and clicks to JSON. Turn this off to stop recording and avoid extra disk use.",
+			"type": "bool",
+			"default": true
+		}
+	}
 }

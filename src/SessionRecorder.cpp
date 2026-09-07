@@ -71,6 +71,36 @@ bool SessionRecorder::isSkipped() const {
     return m_skipped;
 }
 
+bool SessionRecorder::isRecordingEnabled() {
+    return Mod::get()->getSettingValue<bool>(recordSettingKey);
+}
+
+void SessionRecorder::applyEnabled(bool enabled) {
+    if (!enabled) {
+        if (m_active) {
+            endSession();
+        }
+        log::info("GD Helper: recording off");
+        return;
+    }
+
+    if (m_active) {
+        return;
+    }
+
+    auto* layer = PlayLayer::get();
+    if (!layer) {
+        log::info("GD Helper: recording on (starts next level)");
+        return;
+    }
+
+    beginSession(layer->m_level);
+    if (m_active) {
+        beginAttempt(layer);
+        log::info("GD Helper: recording on");
+    }
+}
+
 void SessionRecorder::beginSession(GJGameLevel* level) {
     endSession();
 
@@ -84,6 +114,11 @@ void SessionRecorder::beginSession(GJGameLevel* level) {
     m_attempts.clear();
     m_filename.clear();
     resetAttemptBuffers();
+
+    if (!isRecordingEnabled()) {
+        log::info("GD Helper: recording is off");
+        return;
+    }
 
     if (level && level->isPlatformer()) {
         m_skipped = true;

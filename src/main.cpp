@@ -1,6 +1,9 @@
 #include <Geode/Geode.hpp>
+#include <Geode/loader/SettingV3.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
+#include <Geode/modify/PauseLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
+#include <Geode/ui/Notification.hpp>
 
 #include "SessionRecorder.hpp"
 
@@ -8,6 +11,9 @@ using namespace geode::prelude;
 
 $on_mod(Loaded) {
     log::info("GD Helper loaded");
+    listenForSettingChanges<bool>(SessionRecorder::recordSettingKey, [](bool enabled) {
+        SessionRecorder::get().applyEnabled(enabled);
+    });
 }
 
 class $modify(GDHelperPlayLayer, PlayLayer) {
@@ -75,5 +81,45 @@ class $modify(GDHelperBaseLayer, GJBaseGameLayer) {
             return;
         }
         SessionRecorder::get().recordClick(playLayer, down, button, player2);
+    }
+};
+
+class $modify(GDHelperPauseLayer, PauseLayer) {
+    void customSetup() {
+        PauseLayer::customSetup();
+
+        auto const enabled = SessionRecorder::isRecordingEnabled();
+
+        auto* menu = CCMenu::create();
+        menu->setID("record-menu"_spr);
+        menu->setPosition({ 0.f, 0.f });
+
+        auto* toggle = CCMenuItemToggler::createWithStandardSprites(
+            this,
+            menu_selector(GDHelperPauseLayer::onToggleRecording),
+            0.7f
+        );
+        toggle->setID("record-toggle"_spr);
+        toggle->toggle(enabled);
+        toggle->setPosition({ 36.f, 36.f });
+        menu->addChild(toggle);
+
+        this->addChild(menu, 100);
+
+        auto* label = CCLabelBMFont::create("Record", "bigFont.fnt");
+        label->setID("record-label"_spr);
+        label->setScale(0.35f);
+        label->setAnchorPoint({ 0.f, 0.5f });
+        label->setPosition({ 58.f, 36.f });
+        this->addChild(label, 100);
+    }
+
+    void onToggleRecording(CCObject*) {
+        auto const enabled = !SessionRecorder::isRecordingEnabled();
+        Mod::get()->setSettingValue<bool>(SessionRecorder::recordSettingKey, enabled);
+        Notification::create(
+            enabled ? "GD Helper recording on" : "GD Helper recording off",
+            enabled ? NotificationIcon::Success : NotificationIcon::None
+        )->show();
     }
 };
