@@ -1,10 +1,13 @@
 #include <Geode/Geode.hpp>
+#include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/loader/SettingV3.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
 #include <Geode/modify/PauseLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 #include <Geode/ui/Notification.hpp>
 
+#include "GoldenRunPopup.hpp"
+#include "GoldenStitcher.hpp"
 #include "SessionRecorder.hpp"
 
 using namespace geode::prelude;
@@ -23,6 +26,7 @@ class $modify(GDHelperPlayLayer, PlayLayer) {
 
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
         SessionRecorder::get().beginSession(level);
+        GoldenStitcher::get().beginLevel(level);
         if (!PlayLayer::init(level, useReplay, dontCreateObjects)) {
             SessionRecorder::get().cancelSession();
             return false;
@@ -35,11 +39,13 @@ class $modify(GDHelperPlayLayer, PlayLayer) {
         PlayLayer::resetLevel();
         m_fields->deathRecorded = false;
         SessionRecorder::get().beginAttempt(this);
+        GoldenStitcher::get().onAttemptStart(this);
     }
 
     void postUpdate(float dt) {
         PlayLayer::postUpdate(dt);
         SessionRecorder::get().samplePath(this);
+        GoldenStitcher::get().onPostUpdate(this);
     }
 
     void destroyPlayer(PlayerObject* player, GameObject* object) {
@@ -59,16 +65,19 @@ class $modify(GDHelperPlayLayer, PlayLayer) {
 
         m_fields->deathRecorded = true;
         SessionRecorder::get().recordDeath(this, player, object);
+        GoldenStitcher::get().onDeath();
     }
 
     void levelComplete() {
         SessionRecorder::get().recordComplete(this);
+        GoldenStitcher::get().onComplete(this);
         PlayLayer::levelComplete();
     }
 
     void onQuit() {
         SessionRecorder::get().onReset(this);
         SessionRecorder::get().endSession();
+        GoldenStitcher::get().onQuit();
         PlayLayer::onQuit();
     }
 };
@@ -81,6 +90,7 @@ class $modify(GDHelperBaseLayer, GJBaseGameLayer) {
             return;
         }
         SessionRecorder::get().recordClick(playLayer, down, button, player2);
+        GoldenStitcher::get().onClick(playLayer, down, button, player2);
     }
 };
 
@@ -88,38 +98,25 @@ class $modify(GDHelperPauseLayer, PauseLayer) {
     void customSetup() {
         PauseLayer::customSetup();
 
-        auto const enabled = SessionRecorder::isRecordingEnabled();
-
         auto* menu = CCMenu::create();
-        menu->setID("record-menu"_spr);
+        menu->setID("golden-run-menu"_spr);
         menu->setPosition({ 0.f, 0.f });
 
-        auto* toggle = CCMenuItemToggler::createWithStandardSprites(
+        auto* spr = ButtonSprite::create("Golden Run", "bigFont.fnt", "GJ_button_02.png", 0.8f);
+        spr->setScale(0.55f);
+        auto* btn = CCMenuItemSpriteExtra::create(
+            spr,
             this,
-            menu_selector(GDHelperPauseLayer::onToggleRecording),
-            0.7f
+            menu_selector(GDHelperPauseLayer::onGoldenRun)
         );
-        toggle->setID("record-toggle"_spr);
-        toggle->toggle(enabled);
-        toggle->setPosition({ 36.f, 36.f });
-        menu->addChild(toggle);
+        btn->setID("golden-run-button"_spr);
+        btn->setPosition({ 70.f, 28.f });
+        menu->addChild(btn);
 
         this->addChild(menu, 100);
-
-        auto* label = CCLabelBMFont::create("Record", "bigFont.fnt");
-        label->setID("record-label"_spr);
-        label->setScale(0.35f);
-        label->setAnchorPoint({ 0.f, 0.5f });
-        label->setPosition({ 58.f, 36.f });
-        this->addChild(label, 100);
     }
 
-    void onToggleRecording(CCObject*) {
-        auto const enabled = !SessionRecorder::isRecordingEnabled();
-        Mod::get()->setSettingValue<bool>(SessionRecorder::recordSettingKey, enabled);
-        Notification::create(
-            enabled ? "GD Helper recording on" : "GD Helper recording off",
-            enabled ? NotificationIcon::Success : NotificationIcon::None
-        )->show();
+    void onGoldenRun(CCObject*) {
+        GoldenRunPopup::create()->show();
     }
 };
