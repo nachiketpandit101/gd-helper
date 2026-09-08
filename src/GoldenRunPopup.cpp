@@ -11,7 +11,7 @@
 using namespace geode::prelude;
 
 bool GoldenRunPopup::init() {
-    if (!Popup::init(320.f, 250.f)) {
+    if (!Popup::init(320.f, 270.f)) {
         return false;
     }
 
@@ -46,17 +46,21 @@ bool GoldenRunPopup::init() {
 
     m_inputsLabel = CCLabelBMFont::create("0 inputs", "bigFont.fnt");
     m_inputsLabel->setScale(0.3f);
-    m_mainLayer->addChildAtPosition(m_inputsLabel, Anchor::Center, { 0.f, 8.f });
+    m_mainLayer->addChildAtPosition(m_inputsLabel, Anchor::Center, { 0.f, 12.f });
+
+    m_nextStartPosLabel = CCLabelBMFont::create("No StartPos", "bigFont.fnt");
+    m_nextStartPosLabel->setScale(0.28f);
+    m_mainLayer->addChildAtPosition(m_nextStartPosLabel, Anchor::Center, { 0.f, -6.f });
 
     auto* recordLabel = CCLabelBMFont::create("Record Session", "bigFont.fnt");
     recordLabel->setScale(0.35f);
     recordLabel->setAnchorPoint({ 1.f, 0.5f });
-    m_mainLayer->addChildAtPosition(recordLabel, Anchor::Center, { -8.f, -22.f });
+    m_mainLayer->addChildAtPosition(recordLabel, Anchor::Center, { -8.f, -32.f });
 
     m_recordStateLabel = CCLabelBMFont::create("Off", "bigFont.fnt");
     m_recordStateLabel->setScale(0.3f);
     m_recordStateLabel->setAnchorPoint({ 0.f, 0.5f });
-    m_mainLayer->addChildAtPosition(m_recordStateLabel, Anchor::Center, { 36.f, -22.f });
+    m_mainLayer->addChildAtPosition(m_recordStateLabel, Anchor::Center, { 36.f, -32.f });
 
     m_recordToggle = CCMenuItemToggler::createWithStandardSprites(
         this,
@@ -64,7 +68,7 @@ bool GoldenRunPopup::init() {
         0.6f
     );
     m_recordToggle->m_notClickable = true;
-    m_buttonMenu->addChildAtPosition(m_recordToggle, Anchor::Center, { 16.f, -22.f });
+    m_buttonMenu->addChildAtPosition(m_recordToggle, Anchor::Center, { 16.f, -32.f });
 
     auto* commitSpr = ButtonSprite::create("Commit Segment", "bigFont.fnt", "GJ_button_01.png", 0.8f);
     commitSpr->setScale(0.7f);
@@ -114,6 +118,10 @@ void GoldenRunPopup::refresh() {
         stitcher.inputs().size(),
         stitcher.pendingCount()
     ).c_str());
+    m_nextStartPosLabel->setString(stitcher.nextStartPosLabel().c_str());
+    m_nextStartPosLabel->setColor(
+        stitcher.startPosCount() == 0 ? ccColor3B { 200, 200, 200 } : ccColor3B { 180, 220, 255 }
+    );
 
     auto const recording = SessionRecorder::isRecordingEnabled();
     m_recordToggle->toggle(recording);

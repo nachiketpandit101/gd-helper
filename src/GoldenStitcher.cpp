@@ -1,5 +1,10 @@
 #include "GoldenStitcher.hpp"
 
+#include <Geode/binding/GameObject.hpp>
+#include <Geode/binding/PlayLayer.hpp>
+#include <Geode/ui/Notification.hpp>
+#include <Geode/utils/cocos.hpp>
+
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -56,6 +61,10 @@ size_t GoldenStitcher::pendingCount() const {
     return m_pending.size();
 }
 
+size_t GoldenStitcher::startPosCount() const {
+    return m_startPosXs.size();
+}
+
 char const* GoldenStitcher::statusLabel() const {
     switch (m_status) {
         case StitcherStatus::WaitingForSeam:
@@ -68,11 +77,33 @@ char const* GoldenStitcher::statusLabel() const {
     }
 }
 
+std::string GoldenStitcher::nextStartPosLabel() const {
+    if (m_startPosXs.empty()) {
+        return "No StartPos - use Commit Segment";
+    }
+    if (!m_hasNextStartPos) {
+        return "Last section - commit or finish";
+    }
+    return fmt::format(
+        "Auto-save: SP {}/{} ({:.1f}%)",
+        m_nextStartPosIndex,
+        m_startPosXs.size(),
+        percentAtX(m_nextStartPosX, m_levelLength)
+    );
+}
+
 float GoldenStitcher::coveragePercent() const {
     if (!m_hasSeam) {
         return 0.f;
     }
     return std::clamp(m_seam.percent, 0.f, 100.f);
+}
+
+float GoldenStitcher::percentAtX(float x, float length) {
+    if (length <= 0.f) {
+        return 0.f;
+    }
+    return std::round(std::clamp(x / length * 100.f, 0.f, 100.f) * 100.f) / 100.f;
 }
 
 float GoldenStitcher::computePercent(PlayLayer* layer, PlayerObject* player) {
@@ -119,6 +150,29 @@ bool GoldenStitcher::matchesSeam(PlayerObject* player) const {
         && player->m_isUpsideDown == m_seam.upsideDown;
 }
 
+bool GoldenStitcher::startsAtCommittedStartPos(PlayerObject* player) const {
+    if (!player || !m_hasSeam || !m_committedAtStartPos) {
+        return false;
+    }
+    auto const x = player->getPositionX();
+    return std::abs(x - m_committedStartPosX) <= startPosSpawnEps
+        && x <= m_seam.x + startPosSpawnEps;
+}
+
+void GoldenStitcher::snapOriginToNearbyStartPos(float spawnX) {
+    m_segmentOriginX = spawnX;
+    float bestDist = startPosSpawnEps;
+    bool found = false;
+    for (auto const x : m_startPosXs) {
+        auto const dist = std::abs(x - spawnX);
+        if (dist <= startPosSpawnEps && (!found || dist < bestDist)) {
+            m_segmentOriginX = x;
+            bestDist = dist;
+            found = true;
+        }
+    }
+}
+
 int GoldenStitcher::globalFrame() const {
     return m_frameOffset + (m_localFrame - m_matchLocalFrame);
 }
@@ -130,18 +184,83 @@ void GoldenStitcher::resetPending() {
     m_frameOffset = 0;
 }
 
+void GoldenStitcher::beginRecordingFromSeam() {
+    m_status = StitcherStatus::RecordingSegment;
+    m_frameOffset = m_seam.frame;
+    m_matchLocalFrame = 0;
+}
+
+void GoldenStitcher::updateNextStartPos() {
+    m_hasNextStartPos = false;
+    m_nextStartPosX = 0.f;
+    m_nextStartPosIndex = 0;
+
+    for (size_t i = 0; i < m_startPosXs.size(); ++i) {
+        auto const x = m_startPosXs[i];
+        if (x <= m_segmentOriginX + startPosPassEps) {
+            continue;
+        }
+        if (m_hasSeam && x <= m_seam.x + epsX) {
+            continue;
+        }
+        m_hasNextStartPos = true;
+        m_nextStartPosX = x;
+        m_nextStartPosIndex = static_cast<int>(i + 1);
+        return;
+    }
+}
+
 void GoldenStitcher::beginLevel(GJGameLevel* level) {
     persist();
     m_status = StitcherStatus::Idle;
     resetPending();
     m_hasSeam = false;
+    m_committedAtStartPos = false;
+    m_hasNextStartPos = false;
     m_seam = {};
     m_golden.clear();
+    m_startPosXs.clear();
+    m_segmentOriginX = 0.f;
+    m_committedStartPosX = 0.f;
+    m_nextStartPosX = 0.f;
+    m_nextStartPosIndex = 0;
     m_levelId = level ? static_cast<int>(level->m_levelID) : 0;
     m_levelVersion = level ? level->m_levelVersion : 0;
     m_levelLength = level ? static_cast<float>(level->m_levelLength) : 0.f;
     m_levelName = level ? std::string(level->m_levelName) : "Unknown";
     loadFromDisk();
+}
+
+void GoldenStitcher::scanStartPositions(PlayLayer* layer) {
+    m_startPosXs.clear();
+    if (!layer) {
+        return;
+    }
+    if (layer->m_levelLength > 0.f) {
+        m_levelLength = layer->m_levelLength;
+    }
+
+    if (layer->m_objects) {
+        for (auto* obj : CCArrayExt<GameObject*>(layer->m_objects)) {
+            if (obj && obj->m_objectID == 31) {
+                m_startPosXs.push_back(obj->getPositionX());
+            }
+        }
+    }
+
+    std::sort(m_startPosXs.begin(), m_startPosXs.end());
+    m_startPosXs.erase(
+        std::unique(m_startPosXs.begin(), m_startPosXs.end(), [](float a, float b) {
+            return std::abs(a - b) < 1.f;
+        }),
+        m_startPosXs.end()
+    );
+
+    if (layer->m_player1) {
+        snapOriginToNearbyStartPos(layer->m_player1->getPositionX());
+    }
+    updateNextStartPos();
+    log::info("GD Helper: found {} StartPos object(s)", m_startPosXs.size());
 }
 
 void GoldenStitcher::onAttemptStart(PlayLayer* layer) {
@@ -151,11 +270,29 @@ void GoldenStitcher::onAttemptStart(PlayLayer* layer) {
         return;
     }
 
+    if (m_startPosXs.empty()) {
+        scanStartPositions(layer);
+    }
+
+    snapOriginToNearbyStartPos(layer->m_player1->getPositionX());
+    updateNextStartPos();
+
     if (!m_hasSeam) {
         m_status = StitcherStatus::RecordingSegment;
         m_frameOffset = 0;
         m_matchLocalFrame = 0;
         log::info("GD Helper: golden first segment — recording");
+        return;
+    }
+
+    if (startsAtCommittedStartPos(layer->m_player1)) {
+        m_segmentOriginX = m_committedStartPosX;
+        updateNextStartPos();
+        beginRecordingFromSeam();
+        log::info(
+            "GD Helper: recording from saved StartPos at x={:.1f}",
+            m_committedStartPosX
+        );
         return;
     }
 
@@ -170,9 +307,7 @@ void GoldenStitcher::onAttemptStart(PlayLayer* layer) {
         return;
     }
 
-    m_status = StitcherStatus::RecordingSegment;
-    m_frameOffset = m_seam.frame;
-    m_matchLocalFrame = 0;
+    beginRecordingFromSeam();
 }
 
 void GoldenStitcher::onPostUpdate(PlayLayer* layer) {
@@ -191,6 +326,7 @@ void GoldenStitcher::onPostUpdate(PlayLayer* layer) {
         log::info("GD Helper: seam aligned at local frame {}", m_localFrame);
     }
 
+    tryAutoCommit(layer);
     ++m_localFrame;
 }
 
@@ -245,7 +381,41 @@ void GoldenStitcher::invalidateSegment() {
     );
 }
 
-bool GoldenStitcher::commitSegment(PlayLayer* layer) {
+bool GoldenStitcher::tryAutoCommit(PlayLayer* layer) {
+    if (m_status != StitcherStatus::RecordingSegment || !m_hasNextStartPos || !layer) {
+        return false;
+    }
+    auto* player = layer->m_player1;
+    if (!player || player->getPositionX() + 0.01f < m_nextStartPosX) {
+        return false;
+    }
+
+    auto const savedX = m_nextStartPosX;
+    auto const index = m_nextStartPosIndex;
+    m_committedAtStartPos = true;
+    m_committedStartPosX = savedX;
+
+    if (!commitSegment(layer, true)) {
+        m_committedAtStartPos = false;
+        m_committedStartPosX = 0.f;
+        return false;
+    }
+
+    m_segmentOriginX = savedX;
+    updateNextStartPos();
+    Notification::create(
+        fmt::format("Saved at StartPos {} ({:.1f}% mapped)", index, coveragePercent()),
+        NotificationIcon::Success
+    )->show();
+    log::info(
+        "GD Helper: auto-saved golden segment at StartPos {} (x={:.1f})",
+        index,
+        savedX
+    );
+    return true;
+}
+
+bool GoldenStitcher::commitSegment(PlayLayer* layer, bool continueRecording) {
     if (m_status != StitcherStatus::RecordingSegment || !layer) {
         return false;
     }
@@ -265,8 +435,17 @@ bool GoldenStitcher::commitSegment(PlayLayer* layer) {
     m_golden.insert(m_golden.end(), m_pending.begin(), m_pending.end());
     m_seam = captureSeam(layer, player, globalFrame());
     m_hasSeam = true;
+    if (!continueRecording) {
+        m_committedAtStartPos = false;
+        m_committedStartPosX = 0.f;
+    }
     resetPending();
-    m_status = StitcherStatus::Idle;
+    if (continueRecording) {
+        beginRecordingFromSeam();
+    }
+    else {
+        m_status = StitcherStatus::Idle;
+    }
     persist();
 
     log::info(
@@ -280,9 +459,12 @@ bool GoldenStitcher::commitSegment(PlayLayer* layer) {
 void GoldenStitcher::clearGoldenRun() {
     m_golden.clear();
     m_hasSeam = false;
+    m_committedAtStartPos = false;
     m_seam = {};
+    m_committedStartPosX = 0.f;
     resetPending();
     m_status = StitcherStatus::Idle;
+    updateNextStartPos();
     persist();
     log::info("GD Helper: cleared golden run");
 }
@@ -321,7 +503,7 @@ matjson::Value GoldenStitcher::toJson() const {
     });
 
     if (m_hasSeam) {
-        json["seam"] = matjson::makeObject({
+        auto seam = matjson::makeObject({
             { "x", m_seam.x },
             { "y", m_seam.y },
             { "yAccel", m_seam.yAccel },
@@ -329,6 +511,10 @@ matjson::Value GoldenStitcher::toJson() const {
             { "frame", m_seam.frame },
             { "percent", m_seam.percent },
         });
+        if (m_committedAtStartPos) {
+            seam["startPosX"] = m_committedStartPosX;
+        }
+        json["seam"] = std::move(seam);
     }
 
     return json;
@@ -379,6 +565,8 @@ void GoldenStitcher::loadFromDisk() {
         }
     }
 
+    m_committedAtStartPos = false;
+    m_committedStartPosX = 0.f;
     if (json.contains("seam") && json["seam"].isObject()) {
         auto const& obj = json["seam"];
         m_seam.x = static_cast<float>(obj["x"].asDouble().unwrapOr(0.0));
@@ -388,6 +576,10 @@ void GoldenStitcher::loadFromDisk() {
         m_seam.frame = static_cast<int>(obj["frame"].asInt().unwrapOr(0));
         m_seam.percent = static_cast<float>(obj["percent"].asDouble().unwrapOr(0.0));
         m_hasSeam = true;
+        if (obj.contains("startPosX")) {
+            m_committedStartPosX = static_cast<float>(obj["startPosX"].asDouble().unwrapOr(0.0));
+            m_committedAtStartPos = true;
+        }
     }
 
     log::info(

@@ -105,20 +105,25 @@ An annotated example lives in [`docs/session.example.json`](docs/session.example
 
 Path and click logs make session files much larger. Pause the level and open **Golden Run** (or Geode → GD Helper settings) to turn **Record Session** off when you are not analyzing a run. Turning it off stops sampling immediately and flushes the current session; turning it back on starts a new file.
 
-Use the same popup to stitch a **golden run** from StartPos sections: play until a good pause point, **Commit Segment**, then play from a StartPos **before** that seam and wait until status is `Recording Segment` before continuing. Death before commit discards only the in-progress segment.
+Use the same popup to stitch a **golden run** from StartPos sections. The stitcher scans StartPos objects when the level loads. While you are recording, passing the **next** StartPos after the one you started from auto-saves that segment and keeps recording, so a clean run can map several sections in one attempt.
+
+Death before the next StartPos discards only the in-progress segment. Previous auto-saves stay. Restart from the StartPos that was just saved — recording starts immediately from there (no need to replay the previous section to match physics).
+
+**Commit Segment** is still there for the last stretch after the final StartPos, or for levels with no StartPos objects. Finishing the level also commits.
 
 ### Mapping a level that already has StartPos objects
 
-Work **forward** through the StartPos list. The stitcher only extends the golden run; it cannot fill a gap behind the last commit.
+Work **forward** through the StartPos list. The stitcher only extends the golden run; it cannot fill a gap behind the last save.
 
-1. Play from the first StartPos (or 0%). Get a clean run to a stable point **past** that section — typically just before or at StartPos 2. Pause → Golden Run → **Commit Segment**. Mapped % should jump.
-2. Restart from a StartPos **behind** that commit (StartPos 1, or 2 if it is still before the seam). Status should be `Waiting for Seam Alignment`.
-3. Play the pre-roll until status flips to `Recording Segment` (physics matched the last commit). Keep going into the next new section.
-4. Pause and commit again. Repeat: always start from StartPos *N*, commit somewhere toward StartPos *N+1*.
-5. If you die before committing, only the current attempt is thrown away. Previous commits stay.
-6. Turn **Record Session** off if you only want the golden click sequence and not the large per-attempt JSON files.
+1. Play from the first StartPos (or 0%). Status should be `Recording Segment`. The popup shows the next auto-save target (`Auto-save: SP 2/N`).
+2. Get a clean run until you pass that next StartPos. A toast confirms the save; mapped % jumps. Keep going — the next StartPos is now the target.
+3. If you die, restart from the last saved StartPos. Status should be `Recording Segment` right away.
+4. Repeat until the popup says `Last section - commit or finish`. Beat the level, or pause and **Commit Segment**.
+5. Turn **Record Session** off if you only want the golden click sequence and not the large per-attempt JSON files.
 
-If you start from a StartPos that is already **ahead** of the mapped seam, alignment will never fire. Go back one StartPos.
+If you start from a StartPos that is already **ahead** of the mapped seam, recording will not start. Go back to the last saved StartPos.
+
+Starting from an earlier StartPos still waits for the old physics seam (`Waiting for Seam Alignment`) if you want that path. The usual flow is to start from the StartPos you just saved to.
 
 Golden click sequences are stored under:
 
@@ -138,14 +143,14 @@ docs/session.example.json
 
 Hooks used:
 
-- `PlayLayer::init` — start a session from `GJGameLevel`, load any golden run for the level
+- `PlayLayer::init` — start a session from `GJGameLevel`, load any golden run for the level, scan StartPos objects
 - `PlayLayer::resetLevel` — new attempt (manual restarts are stored as `outcome: "reset"`); stitcher starts recording or waits for a seam
-- `PlayLayer::postUpdate` — sample player `x`/`y`/`percent` every 8 frames; match seam state while waiting
+- `PlayLayer::postUpdate` — sample player `x`/`y`/`percent` every 8 frames; match seam state while waiting; auto-save a golden segment when the next StartPos is passed
 - `PlayLayer::destroyPlayer` — first frame of a real player death (dummy objects ignored); invalidates an uncommitted golden segment
 - `PlayLayer::levelComplete` — `outcome: "complete"`; first non-practice, non-start-pos win becomes the reference; commits a recording golden segment
 - `PlayLayer::onQuit` — flush JSON and persist the golden run
 - `GJBaseGameLayer::handleButton` — log jump/left/right press and release; golden clicks are recorded only after seam alignment
-- `PauseLayer::customSetup` — **Golden Run** button opens the popup (coverage, Record Session toggle, stitcher status, commit/clear)
+- `PauseLayer::customSetup` — **Golden Run** button opens the popup (coverage, next StartPos auto-save, Record Session toggle, stitcher status, commit/clear)
 
 Each attempt JSON object includes `path` (sampled trajectory) and `clicks` (inputs for that attempt). Schema version is `1`. Session recording can be disabled from the Golden Run popup or Geode settings (`record-sessions`).
 

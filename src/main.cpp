@@ -31,6 +31,7 @@ class $modify(GDHelperPlayLayer, PlayLayer) {
             SessionRecorder::get().cancelSession();
             return false;
         }
+        GoldenStitcher::get().scanStartPositions(this);
         return true;
     }
 

@@ -9,6 +9,7 @@ protected:
     cocos2d::CCLabelBMFont* m_coverageLabel = nullptr;
     cocos2d::CCLabelBMFont* m_statusLabel = nullptr;
     cocos2d::CCLabelBMFont* m_inputsLabel = nullptr;
+    cocos2d::CCLabelBMFont* m_nextStartPosLabel = nullptr;
     cocos2d::CCLayerColor* m_barFill = nullptr;
     CCMenuItemToggler* m_recordToggle = nullptr;
     cocos2d::CCLabelBMFont* m_recordStateLabel = nullptr;

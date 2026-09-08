@@ -5,7 +5,7 @@
 	},
 	"id": "gdhelper.analyzer",
 	"name": "GD Helper",
-	"version": "v0.3.1",
+	"version": "v0.4.0",
 	"developer": "gdhelper",
 	"description": "Records Geometry Dash play sessions so you can see where and why you die.",
 	"tags": ["gameplay", "utility", "offline"],

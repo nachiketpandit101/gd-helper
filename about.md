@@ -10,8 +10,8 @@ This is not a clickbot. It watches `PlayLayer` (deaths, resets, completions, pat
 - Each attempt stores percent, position, gamemode, and the collider that killed you
 - A sampled player path (`x`, `y`, percent, gamemode every 8 frames)
 - Click log (press/release, button, position) so you can see where inputs happened on that attempt
-- Pause-menu **Golden Run** popup: coverage bar, session-record toggle, and stitcher status (`Idle` / `Waiting for Seam Alignment` / `Recording Segment`)
-- StartPos segment stitcher that waits for a physics seam match, then appends clicks onto a golden input sequence
+- Pause-menu **Golden Run** popup: coverage bar, next StartPos auto-save target, session-record toggle, and stitcher status (`Idle` / `Waiting for Seam Alignment` / `Recording Segment`)
+- StartPos segment stitcher that auto-saves when you pass the next StartPos, then lets you continue from that StartPos without replaying the previous section
 - Your first normal-mode completion of a level is tagged as the **reference** (perfect run) for later comparison
 - Platformer levels are ignored for now
 
