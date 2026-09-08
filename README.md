@@ -1,6 +1,6 @@
 # GD Helper
 
-A Geometry Dash [Geode](https://geode-sdk.org/) mod that records your play sessions to JSON so you can see **where** you die, **what** killed you, and later compare attempts against a tagged **perfect run**.
+A work in progress Geometry Dash [Geode](https://geode-sdk.org/) mod that records your play sessions to JSON so you can see **where** you die, **what** killed you, and later compare attempts against a tagged **perfect run**.
 
 This is an analysis tool, not a clickbot. It does not play the game for you.
 
@@ -14,13 +14,13 @@ your attempt ──► Geode hooks ──► session JSON ──► where / what
 perfect run  ──►     same     ──► reference JSON ─┘
 ```
 
-| Question | What v0.2 records | Later |
-| --- | --- | --- |
-| Where do I fail most? | Death `x`, `y`, `percent` per attempt | Heatmaps / clustering |
-| What object / mode? | Killer `objectId` + `GameObjectType`, gamemode | Readable names for spikes vs solids |
-| Am I above/below the good line? | Sampled path (`x`, `y` every 8 frames) plus a tagged `reference` completion | Diff `y` vs the reference at the same `x` |
-| Where did I click? | `handleButton` press/release with `x`, `y`, `percent`, `frame` | Compare click timing to the reference |
-| Generate a perfect run for me | Out of scope | Use your first completion, or import a GDR later |
+| Question                        | What v0.2 records                                                           | Later                                            |
+| ------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------ |
+| Where do I fail most?           | Death `x`, `y`, `percent` per attempt                                       | Heatmaps / clustering                            |
+| What object / mode?             | Killer `objectId` + `GameObjectType`, gamemode                              | Readable names for spikes vs solids              |
+| Am I above/below the good line? | Sampled path (`x`, `y` every 8 frames) plus a tagged `reference` completion | Diff `y` vs the reference at the same `x`        |
+| Where did I click?              | `handleButton` press/release with `x`, `y`, `percent`, `frame`              | Compare click timing to the reference            |
+| Generate a perfect run for me   | Out of scope                                                                | Use your first completion, or import a GDR later |
 
 A “perfect run” here is **your first normal-mode completion** of that level, copied to `references/`. It is a reference path, not the only valid route. Physics also has to match (vanilla 240 TPS, same practice / start-pos / CBF settings).
 
@@ -42,7 +42,7 @@ Follow the official [Getting Started](https://docs.geode-sdk.org/getting-started
 
    ```powershell
    scoop bucket add extras
-   scoop install geode-sdk/geode
+   scoop install geode-sdk-cli
    geode --version
    ```
 
@@ -153,15 +153,6 @@ Hooks used:
 - `PauseLayer::customSetup` — **Golden Run** button opens the popup (coverage, next StartPos auto-save, Record Session toggle, stitcher status, commit/clear)
 
 Each attempt JSON object includes `path` (sampled trajectory) and `clicks` (inputs for that attempt). Schema version is `1`. Session recording can be disabled from the Golden Run popup or Geode settings (`record-sessions`).
-
-## Roadmap
-
-After golden-run stitching:
-
-1. In-game death markers on the progress bar.
-2. A small offline comparer (Python is fine) that diffs a session against the tagged reference: death clusters, Y error vs the good line, then input timing.
-
-Related mods if you want to explore the space: [DeathMarkers](https://github.com/MaSp005/deathmarkers), [BetterStats](https://geode-sdk.org/mods/logon.betterstats), [ToastyReplay](https://github.com/ToastexGD/ToastyReplay) / [GDR](https://github.com/maxnut/GDReplayFormat).
 
 ## Resources
 
