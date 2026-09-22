@@ -1,10 +1,10 @@
 # GD Helper
 
-Records your Geometry Dash attempts to JSON so you can study **where** you die, **what** killed you, and **where you clicked**.
+Records your Geometry Dash attempts to JSON so you can study **where** you die, **what** killed you, and **where you clicked**. Pause the level to stitch a **golden run** from StartPos sections.
 
-This is not a clickbot. It watches `PlayLayer` (deaths, resets, completions, path samples) and `handleButton` (clicks), then writes session files under this mod's save directory.
+This is not a clickbot. It watches `PlayLayer` (deaths, resets, completions, path samples) and `handleButton` (clicks), then writes files under this mod's save directory. It does not inject inputs or play the game for you.
 
-## What you get in v0.2
+## Features
 
 - One JSON file per classic-level session
 - Each attempt stores percent, position, gamemode, and the collider that killed you
@@ -18,6 +18,7 @@ This is not a clickbot. It watches `PlayLayer` (deaths, resets, completions, pat
 ## Where the files go
 
 `geode/mods/gdhelper.analyzer/sessions/`  
-`geode/mods/gdhelper.analyzer/references/` (first completion per level)
+`geode/mods/gdhelper.analyzer/references/` (first completion per level)  
+`geode/mods/gdhelper.analyzer/golden/` (stitched click sequence)
 
 See the GitHub README for setup, the JSON contract, and the analysis roadmap.

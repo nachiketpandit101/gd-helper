@@ -14,3 +14,12 @@
 - Pause menu **Golden Run** popup: coverage bar, session-record toggle, stitcher status, commit/clear
 
 # v0.2.1
+
+- Fix death percent reading ~0 on the `destroyPlayer` frame because of Geometry Dash's anticheat dummy object
+
+# v0.2.0
+
+- Record deaths, resets, and completions to per-session JSON
+- Sample player path (`x`, `y`, percent, gamemode) every 8 frames
+- Log press/release clicks with position and percent
+- Tag the first normal-mode completion of a level as a reference run

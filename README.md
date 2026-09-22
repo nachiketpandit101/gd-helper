@@ -1,11 +1,16 @@
 # GD Helper
 
-A work in progress Geometry Dash [Geode](https://geode-sdk.org/) mod that records your play sessions to JSON so you can see **where** you die, **what** killed you, and later compare attempts against a tagged **perfect run**.
+A Geometry Dash [Geode](https://geode-sdk.org/) mod that records play sessions to JSON so you can see **where** you die, **what** killed you, and **where you clicked**, then stitch a **golden run** from StartPos sections.
 
-This is an analysis tool, not a clickbot. It does not play the game for you.
+This is an analysis tool, not a clickbot. It does not inject inputs or play the game for you.
 
-Mod ID: `gdhelper.analyzer`  
-Target: Geometry Dash **2.2081** on **Windows**, Geode **5.10.1**
+| Field | Value |
+| --- | --- |
+| Language | C++23 |
+| SDK | [Geode](https://geode-sdk.org/) 5.10.1 |
+| Target | Geometry Dash **2.2081** (Windows) |
+| Mod ID | `gdhelper.analyzer` |
+| Version | 0.4.0 |
 
 ## How this works
 
@@ -14,7 +19,7 @@ your attempt ──► Geode hooks ──► session JSON ──► where / what
 perfect run  ──►     same     ──► reference JSON ─┘
 ```
 
-| Question                        | What v0.2 records                                                           | Later                                            |
+| Question                        | What it records                                                             | Later                                            |
 | ------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------ |
 | Where do I fail most?           | Death `x`, `y`, `percent` per attempt                                       | Heatmaps / clustering                            |
 | What object / mode?             | Killer `objectId` + `GameObjectType`, gamemode                              | Readable names for spikes vs solids              |
@@ -31,7 +36,7 @@ Classic (non-platformer) levels only for now. Platformer plays are skipped and l
 Follow the official [Getting Started](https://docs.geode-sdk.org/getting-started/) guide. In short:
 
 1. Install [Geometry Dash](https://store.steampowered.com/app/322170/Geometry_Dash/) and the [Geode loader](https://geode-sdk.org/install).
-2. Install **Git**, **CMake 3.29+** (add it to PATH), and **Visual Studio 2022 Build Tools** with the **Desktop development with C++** workload (MSVC + Windows SDK).
+2. Install **Git**, **CMake 3.21+** (add it to PATH), and **Visual Studio 2022 Build Tools** with the **Desktop development with C++** workload (MSVC + Windows SDK).
 3. Recommended: LLVM and Ninja via [Scoop](https://scoop.sh/):
 
    ```powershell
@@ -105,7 +110,9 @@ An annotated example lives in [`docs/session.example.json`](docs/session.example
 
 Path and click logs make session files much larger. Pause the level and open **Golden Run** (or Geode → GD Helper settings) to turn **Record Session** off when you are not analyzing a run. Turning it off stops sampling immediately and flushes the current session; turning it back on starts a new file.
 
-Use the same popup to stitch a **golden run** from StartPos sections. The stitcher scans StartPos objects when the level loads. While you are recording, passing the **next** StartPos after the one you started from auto-saves that segment and keeps recording, so a clean run can map several sections in one attempt.
+## Golden Run
+
+Use the pause-menu **Golden Run** popup to stitch a click sequence from StartPos sections. The stitcher scans StartPos objects when the level loads. While you are recording, passing the **next** StartPos after the one you started from auto-saves that segment and keeps recording, so a clean run can map several sections in one attempt.
 
 Death before the next StartPos discards only the in-progress segment. Previous auto-saves stay. Restart from the StartPos that was just saved — recording starts immediately from there (no need to replay the previous section to match physics).
 

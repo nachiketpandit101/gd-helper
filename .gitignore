@@ -1,69 +1,41 @@
-# Prerequisites
-*.d
+# Build
+**/build
+build-*/
+/cmake-build-*/
+.cache/
 
-# Compiled Object files
+# Compiled objects and libraries
+*.d
 *.slo
 *.lo
 *.o
 *.obj
-
-# Precompiled Headers
 *.gch
 *.pch
-
-# Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
 *.lai
 *.la
 *.a
 *.lib
-
-# Executables
 *.exe
 *.out
 *.app
 
-# Macos be like
-**/.DS_Store
-
-# Cache files for Sublime Text
+# Editor / IDE
+.vscode/*
+!.vscode/c_cpp_properties.json
+!.vscode/settings.json
+.history/
+.vs/
+.idea/
+.cursor/
+*.sublime-workspace
 *.tmlanguage.cache
 *.tmPreferences.cache
 *.stTheme.cache
 
-# Ignore build folders
-**/build
-# Ignore platform specific build folders
-build-*/
-
-# Workspace files are user-specific
-*.sublime-workspace
-
-# Keep IntelliSense config; ignore the rest of .vscode
-.vscode/*
-!.vscode/c_cpp_properties.json
-!.vscode/settings.json
-
-# Local History for Visual Studio Code
-.history/
-
-# clangd
-.cache/
-
-# Visual Studio
-.vs/
-
-# CLion
-.idea/
-/cmake-build-*/
-
-# Cursor
-.cursor/
+# OS
+.DS_Store
+**/.DS_Store
